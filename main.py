@@ -1,86 +1,126 @@
 from datetime import datetime
 
-from prisoner import Prisoner
-from сountry import Country
-from criminal_record import CriminalRecord
-
-# print('\n\n--------------Start of testing the Country class--------------\n\n')
-#
-# try:
-# poland = Country(name='Poland', capital='Warsaw')
-#     poland.save_to_pickle()
-#     Country.load_from_pickle(1)
-# except ValueError as e:
-#     print(e)
-#
-# try:
-#     poland = Country(name=1, capital=2)
-# except ValueError as e:
-#     print(e)
-#
-# try:
-#     poland = Country(name='dd', capital='dd')
-# except ValueError as e:
-#     print(e)
-#
-# try:
-#     poland = Country(name='df-d', capital='d-d')
-# except ValueError as e:
-#     print(e)
-#
-# print('\n\n--------------End of testing the Country class--------------\n\n')
-#
-#
-# prisoner1 = Prisoner(name="Andrei", surname="Chikatilo", birth_date=datetime(1936, 5, 20), country=poland)
-# #
-# prisoner1.save_to_pickle()
-# prisoner2 = Prisoner.load_from_pickle(1)
-#
-# prisoner2.country.save_to_pickle()
-#
-# # Prisoner.add_new_prisoner(prisoner2)
-#
-# Prisoner.delete_new_prisoner(1)
-# # Prisoner.delete_new_prisoner(prisoner2)
-# temp = Prisoner.get_prisoners()
-# print(temp[0])
-# temp[0] = None
-# print(temp)
-# [print(p) for p in Prisoner.get_prisoners()]
+from models.criminal_record import CriminalRecord
+from models.prisoner import Prisoner
+from models.сountry import Country
 
 
+def print_collection(collection):
+    print('\t' + "\n\t".join(item.__str__() for item in collection))
 
 
+def country_test():
+    poland = Country(name='Poland', capital='Warsaw')
+    germany = Country(name='Germany', capital='Berlin')
+    ukraine = Country(name='Ukraine', capital='Kiev')
+
+    try:
+        country1 = Country(name='000', capital='333')
+    except ValueError as e:
+        print(e)
+
+    try:
+        country2 = Country(name=0, capital='333')
+    except ValueError as e:
+        print(e)
+
+    print('Testing the collection protection')
+    country_list = Country.get_counties()
+    print_collection(country_list)
+    country_list[0] = None
+    print_collection(country_list)
+    print_collection(Country.get_counties())
+
+    print('Testing deleting the item by ID')
+    Country.delete_item(item_id=1)
+    print_collection(Country.get_counties())
+
+    print('Testing deleting the item by object reference')
+    Country.delete_item(item=ukraine)
+    print_collection(Country.get_counties())
+
+    print('Testing loading and saving object')
+    germany.save_to_pickle()
+    loaded_object = Country.load_from_pickle(2)
+    print(loaded_object)
 
 
+# country_test()
+
+def criminal_record_test():
+    morder = CriminalRecord(name='Murder', description='Murdered the cachier while robbing the shop')
+    robber = CriminalRecord(name='Robbery')
+    rape = CriminalRecord(name='Rape')
+
+    try:
+        criminal_record1 = CriminalRecord(name='000', description='333')
+    except ValueError as e:
+        print(e)
+
+    try:
+        criminal_record2 = CriminalRecord(name=2, description=2)
+    except ValueError as e:
+        print(e)
+
+    print('Testing the collection protection')
+    criminal_record_list = CriminalRecord.get_criminal_records()
+    print_collection(criminal_record_list)
+    criminal_record_list[0] = None
+    print_collection(criminal_record_list)
+    print_collection(CriminalRecord.get_criminal_records())
 
 
+    print('Testing deleting the item by ID')
+    CriminalRecord.delete_item(item_id=1)
+    print_collection(CriminalRecord.get_criminal_records())
 
-# prisoner1 = Prisoner(name="John Doe", surname="Dofe", birth_date=datetime(1980, 5, 20), country=poland)
-# prisoner2 = Prisoner(name="Jane Doe", nickname="JJfJ", surname="Dfoe", birth_date=datetime(1990, 8, 15), country=germany)
-#
-#
-# print(prisoner1.name, prisoner1.surname, prisoner1.birth_date, prisoner1.country.name, prisoner1.age)
-# print(prisoner2.name, prisoner2.nickname, prisoner2.surname, prisoner2.birth_date, prisoner2.country.name, prisoner2.age)
-#
-# try:
-#     prisoner1.birth_date = datetime(2030, 1, 1)
-# except ValueError as e:
-#     print(e)
-#
-# try:
-#     prisoner2.name = "Al"
-# except ValueError as e:
-#     print(e)
+    print('Testing deleting the item by object reference')
+    CriminalRecord.delete_item(item=rape)
+    print_collection(CriminalRecord.get_criminal_records())
 
-criminal_record_1 = CriminalRecord(name='Murder', description='While robbing the shop, killed the cashier')
-criminal_record_2 = CriminalRecord(name='Robbery', description='Robbed the shop')
+    print('Testing loading and saving object')
+    robber.save_to_pickle()
+    loaded_object = CriminalRecord.load_from_pickle(2)
+    print(loaded_object)
 
-records = [criminal_record_1, criminal_record_2]
+# criminal_record_test()
 
-poland = Country(name='Poland', capital='Warsaw')
 
-prisoner1 = Prisoner(name="John Doe", surname="Dofe", birth_date=datetime(1980, 5, 20), country=poland, criminal_record=records)
+def prisoner_test():
+    country = Country(name='Poland', capital='Warsaw')
+    morder = CriminalRecord(name='Murder', description='Murdered the cachier while robbing the shop')
+    robber = CriminalRecord(name='Robbery')
 
-print(prisoner1)
+    prisoner1 = Prisoner(name='Andrei', surname='Chikatilo', birth_date=datetime(year=1936, day=1, month=1), country=country,
+                         criminal_record=[morder, robber])
 
+    prisoner2 = Prisoner(name='Andrei', nickname='savage', surname='Chikatilo', birth_date=datetime(year=1936, day=1, month=1), country=country,
+                         criminal_record=[morder, robber])
+
+    prisoner3 = Prisoner(name='Andrei', nickname='savage', surname='Chikatilo',
+                         birth_date=datetime(year=1936, day=1, month=1), country=country,
+                         criminal_record=[morder, robber])
+
+    print('Testing the collection protection')
+    temp = Prisoner.get_prisoners()
+    print_collection(temp)
+    temp[0] = None
+    print_collection(temp)
+    print_collection(Prisoner.get_prisoners())
+
+
+    print('Testing deleting the item by ID')
+    Prisoner.delete_item(item_id=2)
+    print_collection(Prisoner.get_prisoners())
+
+    print('Testing deleting the item by object reference')
+    Prisoner.delete_item(item=prisoner1)
+    print_collection(Prisoner.get_prisoners())
+
+    print('Testing loading and saving object')
+    prisoner3.save_to_pickle()
+    loaded_object = Prisoner.load_from_pickle(3)
+    print(loaded_object)
+
+
+prisoner_test()

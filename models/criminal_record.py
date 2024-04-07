@@ -1,13 +1,10 @@
-import pickle
 from typing import Optional, ClassVar, List
 
 from pydantic import BaseModel, PrivateAttr
 
-from decorators import validate_string
-
-
-def get_file_path(id):
-    return f"storage/criminal_storage/Criminal_record_{id}"
+from utils.collection_manager import CollectionManager, T
+from utils.decorators import validate_string
+from utils.serialize_manager import Serializable
 
 
 class CriminalRecordCounter:
@@ -20,10 +17,12 @@ class CriminalRecordCounter:
         CriminalRecordCounter.counter += 1
 
 
-class CriminalRecord(BaseModel):
+class CriminalRecord(BaseModel, CollectionManager['CriminalRecord'], Serializable):
     _id: int = PrivateAttr()
     _name: str = PrivateAttr()
     _description: Optional[str] = PrivateAttr(default=None)
+
+    _id_counter: int = 0
 
     _criminal_records: ClassVar[List['CriminalRecord']] = []
 
@@ -33,36 +32,28 @@ class CriminalRecord(BaseModel):
         self.name = data.get('name')
         self.description = data.get('description')
 
+        CriminalRecord.add_item(self)
+
+    @staticmethod
+    def get_file_path(id: int) -> str:
+        return f"storage/criminal_record_storage/CriminalRecord_{id}"
+
     @classmethod
-    def get_prisoners(cls) -> List['CriminalRecord']:
+    def _get_items(cls) -> List['CriminalRecord']:
+        return cls._criminal_records
+
+    @classmethod
+    def item_id(cls, item: 'CriminalRecord') -> int:
+        return item._id
+
+    @classmethod
+    def get_criminal_records(cls) -> List['CriminalRecord']:
         return cls._criminal_records.copy()
 
-    def save_to_pickle(self) -> None:
-        try:
-            with open(get_file_path(self._id), 'wb') as file:
-                pickle.dump(self, file)
-                print('Saved:', self.__str__())
-        except IOError as e:
-            print(f"Error while saving the object: {e}")
-
-    @classmethod
-    def load_from_pickle(cls, id: int):
-        try:
-            with open(get_file_path(id), 'rb') as file:
-                instance = pickle.load(file)
-                print('Load:', instance.__str__())
-            return instance
-        except FileNotFoundError as e:
-            print(e)
-        except pickle.UnpicklingError as e:
-            print(e)
-        except Exception as e:
-            print(e)
 
     @property
     def name(self):
         return self._name
-
 
     @name.setter
     @validate_string(min_length=3, max_length=50)
@@ -74,10 +65,13 @@ class CriminalRecord(BaseModel):
         return self._description
 
     @description.setter
-    @validate_string(min_length=10, max_length=500, pattern="^[A-Za-z0-9 .,-]+$")
+    @validate_string(min_length=10, max_length=500, pattern="^[A-Za-z0-9 .,-]+$", allow_none=True)
     def description(self, value):
         self._description = value
 
+    @property
+    def id(self):
+        return self._id
 
     def __str__(self) -> str:
         return f"Criminal Record(id={self._id}, name='{self._name}', description='{self._description}')"

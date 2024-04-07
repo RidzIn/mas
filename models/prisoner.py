@@ -1,18 +1,15 @@
 from typing import List, ClassVar
 
 from pydantic import BaseModel, PrivateAttr
-import pickle
 from datetime import datetime, timedelta
 from typing import Optional
 
-from decorators import validate_string
-from сountry import Country
+from utils.collection_manager import CollectionManager
+from utils.decorators import validate_string
+from utils.serialize_manager import Serializable
+from models.сountry import Country
 
-from criminal_record import CriminalRecord
-
-
-def get_file_path(id):
-    return f"storage/prisoner_storage/Prisoner_{id}"
+from models.criminal_record import CriminalRecord
 
 
 class PrisonerCounter:
@@ -25,7 +22,7 @@ class PrisonerCounter:
         PrisonerCounter.counter += 1
 
 
-class Prisoner(BaseModel):
+class Prisoner(BaseModel, CollectionManager['Prisoner'], Serializable):
     _id: int = PrivateAttr()
     _name: str = PrivateAttr()
     _nickname: Optional[str] = PrivateAttr(default=None)
@@ -46,59 +43,20 @@ class Prisoner(BaseModel):
         self.birth_date = data.get('birth_date')
         self.country = data.get('country')
         self.criminal_record = data.get('criminal_record')
-        Prisoner.add_new_prisoner(self)
 
-
-    @classmethod
-    def add_new_prisoner(cls, prisoner):
-        if not isinstance(prisoner, Prisoner):
-            raise ValueError('ERROR: prisoners must contain only prisoners object')
-        if prisoner in Prisoner._prisoners:
-            raise ValueError('ERROR: prisoner already in the list')
-        Prisoner._prisoners.append(prisoner)
-        print(f'Added: Prisoner {prisoner._id}')
+        Prisoner.add_item(self)
 
     @classmethod
-    def delete_new_prisoner(cls, prisoner_id=None, prisoner=None):
-        if prisoner_id is not None and prisoner is not None:
-            raise ValueError('ERROR: Please provide either prisoner_id or prisoner, not both.')
-
-        if prisoner_id is None and prisoner is None:
-            raise ValueError('ERROR: Please provide either prisoner_id or prisoner.')
-
-        if prisoner_id is not None:
-            if not any(p._id == prisoner_id for p in Prisoner._prisoners):
-                raise ValueError(f'ERROR: No prisoner found with ID {prisoner_id}')
-            Prisoner._prisoners = [p for p in Prisoner._prisoners if p._id != prisoner_id]
-            print(f'Deleted: Prisoner {prisoner_id}')
-
-        elif prisoner is not None:
-            if prisoner not in Prisoner._prisoners:
-                raise ValueError('ERROR: The provided prisoner object is not in the list')
-            Prisoner.prisoners = [p for p in Prisoner._prisoners if p is not prisoner]
-            print(f'Deleted: Prisoner {prisoner.id}')
-
-    def save_to_pickle(self) -> None:
-        try:
-            with open(get_file_path(self._id), 'wb') as file:
-                pickle.dump(self, file)
-                print('Saved:', self.__str__())
-        except IOError as e:
-            print(f"Error while saving the object: {e}")
+    def _get_items(cls) -> List['Prisoner']:
+        return cls._prisoners
 
     @classmethod
-    def load_from_pickle(cls, id: int):
-        try:
-            with open(get_file_path(id), 'rb') as file:
-                instance = pickle.load(file)
-                print('Load:', instance.__str__())
-            return instance
-        except FileNotFoundError as e:
-            print(e)
-        except pickle.UnpicklingError as e:
-            print(e)
-        except Exception as e:
-            print(e)
+    def item_id(cls, item: 'Prisoner') -> int:
+        return item._id
+
+    @staticmethod
+    def get_file_path(id: int) -> str:
+        return f"storage/prisoner_storage/Prisoner_{id}"
 
     @classmethod
     def get_prisoners(cls) -> List['Prisoner']:
@@ -155,6 +113,10 @@ class Prisoner(BaseModel):
 
     @country.setter
     def country(self, value: Country):
+        if value is None:
+            raise ValueError('ERROR: value cannot be None')
+        if not isinstance(value, Country):
+            raise ValueError('ERROR: you provided not an Country object')
         self._country = value
 
     def __str__(self) -> str:
@@ -174,4 +136,12 @@ class Prisoner(BaseModel):
 
     @criminal_record.setter
     def criminal_record(self, value):
+        if value is None:
+            raise ValueError('ERROR: value cannot be None')
+        if not isinstance(value, List):
+            raise ValueError('ERROR: you need to provide a list object')
+        for item in value:
+            if not isinstance(item, CriminalRecord):
+                raise TypeError("Some items are not a Criminal Record type")
         self._criminal_record = value
+
