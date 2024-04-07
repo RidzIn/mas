@@ -1,38 +1,41 @@
-from pydantic import BaseModel, PrivateAttr
 import pickle
+from typing import Optional, ClassVar, List
+
+from pydantic import BaseModel, PrivateAttr
 
 from decorators import validate_string
 
 
 def get_file_path(id):
-    return f"storage/country_storage/Country_{id}"
+    return f"storage/criminal_storage/Criminal_record_{id}"
 
 
-class CountryCounter:
+class CriminalRecordCounter:
     counter: int = 0
 
     current_counter: int
 
     def __init__(self):
-        self.current_counter = CountryCounter.counter
-        CountryCounter.counter += 1
+        self.current_counter = CriminalRecordCounter.counter
+        CriminalRecordCounter.counter += 1
 
 
-class Country(BaseModel):
+class CriminalRecord(BaseModel):
     _id: int = PrivateAttr()
     _name: str = PrivateAttr()
-    _capital: str = PrivateAttr()
+    _description: Optional[str] = PrivateAttr(default=None)
 
-    _id_counter: int = 0
+    _criminal_records: ClassVar[List['CriminalRecord']] = []
 
     def __init__(self, **data):
         super().__init__(**data)
-        self._id = CountryCounter().counter
+        self._id = CriminalRecordCounter().counter
         self.name = data.get('name')
-        self.capital = data.get('capital')
+        self.description = data.get('description')
 
-    def __str__(self) -> str:
-        return f"Country(id={self._id}, name='{self._name}', capital='{self._capital}')"
+    @classmethod
+    def get_prisoners(cls) -> List['CriminalRecord']:
+        return cls._criminal_records.copy()
 
     def save_to_pickle(self) -> None:
         try:
@@ -60,21 +63,23 @@ class Country(BaseModel):
     def name(self):
         return self._name
 
-    @property
-    def capital(self):
-        return self._capital
-
-    @property
-    def id(self):
-        return self._id
 
     @name.setter
     @validate_string(min_length=3, max_length=50)
     def name(self, value):
         self._name = value
 
-    @capital.setter
-    @validate_string(min_length=3, max_length=50)
-    def capital(self, value):
-        self._capital = value
+    @property
+    def description(self):
+        return self._description
+
+    @description.setter
+    @validate_string(min_length=10, max_length=500, pattern="^[A-Za-z0-9 .,-]+$")
+    def description(self, value):
+        self._description = value
+
+
+    def __str__(self) -> str:
+        return f"Criminal Record(id={self._id}, name='{self._name}', description='{self._description}')"
+
 
