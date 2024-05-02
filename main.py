@@ -1,126 +1,38 @@
-from datetime import datetime
+def test_shift_association():
+    # Create sample guards and prisoners
+    guards = [Guard() for i in range(10)]  # Creating 10 guards
+    country = Country(name='fsdfsdfsd', capital='sdfdsfsdf')
+    criminal_record = CriminalRecord(name='fdsfsdfsdf')
+    prisoners = [Prisoner(name='afdfdsfsdfsdf', nickname='fdsfdsfsdfd', surname='dfdsfdsfsdfs', birth_date=datetime(1999, 5, 17), country=country, criminal_record=[criminal_record]) for _ in range(30)]  # Creating 30 prisoners
 
-from models.criminal_record import CriminalRecord
-from models.prisoner import Prisoner
-from models.сountry import Country
-
-
-def print_collection(collection):
-    print('\t' + "\n\t".join(item.__str__() for item in collection))
-
-
-def country_test():
-    poland = Country(name='Poland', capital='Warsaw')
-    germany = Country(name='Germany', capital='Berlin')
-    ukraine = Country(name='Ukraine', capital='Kiev')
-
+    # Test adding too many guards
     try:
-        country1 = Country(name='000', capital='333')
+        shift_with_too_many_guards = Shift(guards=guards[:6], prisoners=prisoners[:20])
+        print("Test failed: No error raised when adding too many guards")
     except ValueError as e:
-        print(e)
+        print("Test passed: Correctly raised error when adding too many guards:", str(e))
 
+    # Test adding too many prisoners
     try:
-        country2 = Country(name=0, capital='333')
+        shift_with_too_many_prisoners = Shift(guards=guards[:5], prisoners=prisoners[:21])
+        print("Test failed: No error raised when adding too many prisoners")
     except ValueError as e:
-        print(e)
-
-    print('Testing the collection protection')
-    country_list = Country.get_counties()
-    print_collection(country_list)
-    country_list[0] = None
-    print_collection(country_list)
-    print_collection(Country.get_counties())
-
-    print('Testing deleting the item by ID')
-    Country.delete_item(item_id=1)
-    print_collection(Country.get_counties())
-
-    print('Testing deleting the item by object reference')
-    Country.delete_item(item=ukraine)
-    print_collection(Country.get_counties())
-
-    print('Testing loading and saving object')
-    germany.save_to_pickle()
-    loaded_object = Country.load_from_pickle(2)
-    print(loaded_object)
-
-
-# country_test()
-
-def criminal_record_test():
-    morder = CriminalRecord(name='Murder', description='Murdered the cachier while robbing the shop')
-    robber = CriminalRecord(name='Robbery')
-    rape = CriminalRecord(name='Rape')
-
+        print("Test passed: Correctly raised error when adding too many prisoners:", str(e))
+    #
+    # Test proper shift creation
     try:
-        criminal_record1 = CriminalRecord(name='000', description='333')
+        correct_shift = Shift(guards=guards[:5], prisoners=prisoners[:20])
+        print("Test passed: Shift created successfully with correct number of guards and prisoners")
     except ValueError as e:
-        print(e)
-
-    try:
-        criminal_record2 = CriminalRecord(name=2, description=2)
-    except ValueError as e:
-        print(e)
-
-    print('Testing the collection protection')
-    criminal_record_list = CriminalRecord.get_criminal_records()
-    print_collection(criminal_record_list)
-    criminal_record_list[0] = None
-    print_collection(criminal_record_list)
-    print_collection(CriminalRecord.get_criminal_records())
+        print("Test failed: Error raised during correct shift creation:", str(e))
 
 
-    print('Testing deleting the item by ID')
-    CriminalRecord.delete_item(item_id=1)
-    print_collection(CriminalRecord.get_criminal_records())
+if __name__ == "__main__":
+    from models.criminal_record import CriminalRecord
+    from models.shift import Shift
+    from models.guard import Guard
+    from models.prisoner import Prisoner
+    from datetime import datetime
+    from models.сountry import Country
 
-    print('Testing deleting the item by object reference')
-    CriminalRecord.delete_item(item=rape)
-    print_collection(CriminalRecord.get_criminal_records())
-
-    print('Testing loading and saving object')
-    robber.save_to_pickle()
-    loaded_object = CriminalRecord.load_from_pickle(2)
-    print(loaded_object)
-
-# criminal_record_test()
-
-
-def prisoner_test():
-    country = Country(name='Poland', capital='Warsaw')
-    morder = CriminalRecord(name='Murder', description='Murdered the cachier while robbing the shop')
-    robber = CriminalRecord(name='Robbery')
-
-    prisoner1 = Prisoner(name='Andrei', surname='Chikatilo', birth_date=datetime(year=1936, day=1, month=1), country=country,
-                         criminal_record=[morder, robber])
-
-    prisoner2 = Prisoner(name='Andrei', nickname='savage', surname='Chikatilo', birth_date=datetime(year=1936, day=1, month=1), country=country,
-                         criminal_record=[morder, robber])
-
-    prisoner3 = Prisoner(name='Andrei', nickname='savage', surname='Chikatilo',
-                         birth_date=datetime(year=1936, day=1, month=1), country=country,
-                         criminal_record=[morder, robber])
-
-    print('Testing the collection protection')
-    temp = Prisoner.get_prisoners()
-    print_collection(temp)
-    temp[0] = None
-    print_collection(temp)
-    print_collection(Prisoner.get_prisoners())
-
-
-    print('Testing deleting the item by ID')
-    Prisoner.delete_item(item_id=2)
-    print_collection(Prisoner.get_prisoners())
-
-    print('Testing deleting the item by object reference')
-    Prisoner.delete_item(item=prisoner1)
-    print_collection(Prisoner.get_prisoners())
-
-    print('Testing loading and saving object')
-    prisoner3.save_to_pickle()
-    loaded_object = Prisoner.load_from_pickle(3)
-    print(loaded_object)
-
-
-prisoner_test()
+    test_shift_association()

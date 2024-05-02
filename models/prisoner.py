@@ -8,8 +8,8 @@ from utils.collection_manager import CollectionManager
 from utils.decorators import validate_string
 from utils.serialize_manager import Serializable
 from models.сountry import Country
-
 from models.criminal_record import CriminalRecord
+from models.jail_cell import JailCell
 
 
 class PrisonerCounter:
@@ -33,6 +33,11 @@ class Prisoner(BaseModel, CollectionManager['Prisoner'], Serializable):
 
     _prisoners: ClassVar[List['Prisoner']] = []
     _criminal_record: List['CriminalRecord']
+
+    jail_cell: Optional['JailCell'] = None
+
+    shifts: List[object] = []
+
 
     def __init__(self, **data):
         super().__init__(**data)
@@ -61,6 +66,35 @@ class Prisoner(BaseModel, CollectionManager['Prisoner'], Serializable):
     @classmethod
     def get_prisoners(cls) -> List['Prisoner']:
         return cls._prisoners.copy()
+
+    def add_shift(self, shift):
+        if shift is None:
+            raise ValueError("You can't add None values as shift object")
+        if shift not in self.shifts:
+            self.shifts.append(shift)
+        else:
+            raise ValueError("Shift is already assigned to this prisoner")
+
+    def remove_shift(self, shift):
+        if shift in self.shifts:
+            self.shifts.remove(shift)
+        else:
+            raise ValueError("Shift not found in this prisoner's list")
+
+    def move_to_cell(self, new_cell: 'JailCell'):
+        if new_cell is None:
+            raise ValueError("New cell cannot be None")
+        if self.jail_cell:
+            self.jail_cell.remove_prisoner(self)
+        new_cell.add_prisoner(self)
+
+    def leave_cell(self):
+        if self.jail_cell:
+            self.jail_cell.remove_prisoner(self)
+            self.jail_cell = None
+        else:
+            raise ValueError("Prisoner is not in any cell")
+
 
     @property
     def name(self):
