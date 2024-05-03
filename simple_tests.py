@@ -17,7 +17,7 @@ class TestJailCellAssociation(unittest.TestCase):
         'surname': 'Dean',
         'birth_date': datetime(1999, 5, 17),
         'country': country,
-        'criminal_record': [criminal_record]
+        'criminal_records': {}
     }
 
     def test_add_prisoner_to_cell(self):

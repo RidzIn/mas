@@ -2,7 +2,7 @@ from typing import Optional, ClassVar, List
 
 from pydantic import BaseModel, PrivateAttr
 
-from utils.collection_manager import CollectionManager, T
+from utils.collection_manager import CollectionManager
 from utils.decorators import validate_string
 from utils.serialize_manager import Serializable
 
@@ -19,7 +19,7 @@ class CriminalRecordCounter:
 
 class CriminalRecord(BaseModel, CollectionManager['CriminalRecord'], Serializable):
     _id: int = PrivateAttr()
-    _name: str = PrivateAttr()
+    _name: PrivateAttr()
     _description: Optional[str] = PrivateAttr(default=None)
 
     _id_counter: int = 0
@@ -29,6 +29,7 @@ class CriminalRecord(BaseModel, CollectionManager['CriminalRecord'], Serializabl
     def __init__(self, **data):
         super().__init__(**data)
         self._id = CriminalRecordCounter().counter
+        self._name = None
         self.name = data.get('name')
         self.description = data.get('description')
 
@@ -58,6 +59,8 @@ class CriminalRecord(BaseModel, CollectionManager['CriminalRecord'], Serializabl
     @name.setter
     @validate_string(min_length=3, max_length=50)
     def name(self, value):
+        if self._name is not None:
+            raise ValueError("You can't change the name after object was created")
         self._name = value
 
     @property

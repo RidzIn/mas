@@ -1,4 +1,4 @@
-from typing import List, ClassVar
+from typing import List, ClassVar, Dict
 
 from pydantic import BaseModel, PrivateAttr
 from datetime import datetime, timedelta
@@ -32,7 +32,7 @@ class Prisoner(BaseModel, CollectionManager['Prisoner'], Serializable):
     _country: Country = PrivateAttr()
 
     _prisoners: ClassVar[List['Prisoner']] = []
-    _criminal_record: List['CriminalRecord']
+    _criminal_records: Dict[str, 'CriminalRecord'] = {}
 
     jail_cell: Optional['JailCell'] = None
 
@@ -47,7 +47,9 @@ class Prisoner(BaseModel, CollectionManager['Prisoner'], Serializable):
         self.surname = data.get('surname')
         self.birth_date = data.get('birth_date')
         self.country = data.get('country')
-        self.criminal_record = data.get('criminal_record')
+
+        for v in data.get('criminal_records'):
+            self.add_criminal_record(v)
 
         Prisoner.add_item(self)
 
@@ -161,21 +163,23 @@ class Prisoner(BaseModel, CollectionManager['Prisoner'], Serializable):
                 f"country='{self._country.__str__()}',"
                 f"age='{self.age}',"
                 f"birth_date='{self._birth_date}'),"
-                f"criminal_records={' '.join([record.__str__() for record in self.criminal_record])}")
+                f"criminal_records={' '.join([k.__str__()+':'+v.__str__() for k, v in self._criminal_records.items()])}")
 
+
+    def add_criminal_record(self, record: CriminalRecord):
+        if f"{record.name}_{record.id}" in self._criminal_records:
+            raise ValueError("You cannot add the same criminal record twice")
+        self._criminal_records[f"{record.name}_{record.id}"] = record
+
+    def get_criminal_record(self, record_key: str) -> Optional[CriminalRecord]:
+        return self._criminal_records.get(record_key)
+
+    def remove_criminal_record(self, record_key: str):
+        if record_key in self._criminal_records:
+            del self._criminal_records[record_key]
+        else:
+            raise ValueError("No record found with this key.")
 
     @property
-    def criminal_record(self):
-        return self._criminal_record
-
-    @criminal_record.setter
-    def criminal_record(self, value):
-        if value is None:
-            raise ValueError('ERROR: value cannot be None')
-        if not isinstance(value, List):
-            raise ValueError('ERROR: you need to provide a list object')
-        for item in value:
-            if not isinstance(item, CriminalRecord):
-                raise TypeError("Some items are not a Criminal Record type")
-        self._criminal_record = value
-
+    def criminal_records(self) -> Dict[str, CriminalRecord]:
+        return self._criminal_records.copy()

@@ -11,20 +11,21 @@ from models.сountry import Country
 
 class TestShift(unittest.TestCase):
     country = Country(name='Poland', capital='Warsaw')
-    criminal_record = CriminalRecord(name='Pirate')
+    crim_record = CriminalRecord(name='Pirate')
     prisoner_dict = {
         'name': 'Mikel',
         'nickname': 'Torrent',
         'surname': 'Dean',
         'birth_date': datetime(1999, 5, 17),
         'country': country,
-        'criminal_record': [criminal_record]
+        'criminal_records': {}
     }
 
     def test_no_direct_association(self):
         """Ensure there are no direct links between Guard and Prisoner."""
         guard = Guard()
         prisoner = Prisoner(**self.prisoner_dict)
+        prisoner.add_criminal_record(self.crim_record)
         self.assertFalse(hasattr(guard, 'prisoners'))
         self.assertFalse(hasattr(prisoner, 'guards'))
 
