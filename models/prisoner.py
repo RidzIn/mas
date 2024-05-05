@@ -4,13 +4,13 @@ from pydantic import BaseModel, PrivateAttr
 from datetime import datetime, timedelta
 from typing import Optional
 
-from utils.collection_manager import CollectionManager
+from utils.collection_manager import CollectionManager, T
 from utils.decorators import validate_string
 from utils.serialize_manager import Serializable
 from models.сountry import Country
 from models.criminal_record import CriminalRecord
 from models.jail_cell import JailCell
-
+from models.health_record import HealthRecord
 
 class PrisonerCounter:
     counter: int = 0
@@ -20,6 +20,7 @@ class PrisonerCounter:
     def __init__(self):
         self.current_counter = PrisonerCounter.counter
         PrisonerCounter.counter += 1
+
 
 
 class Prisoner(BaseModel, CollectionManager['Prisoner'], Serializable):
@@ -38,10 +39,12 @@ class Prisoner(BaseModel, CollectionManager['Prisoner'], Serializable):
 
     shifts: List[object] = []
 
+    _health_record: HealthRecord = PrivateAttr()
 
     def __init__(self, **data):
         super().__init__(**data)
         self._id = PrisonerCounter().counter
+
         self.name = data.get('name')
         self.nickname = data.get('nickname')
         self.surname = data.get('surname')
@@ -51,7 +54,34 @@ class Prisoner(BaseModel, CollectionManager['Prisoner'], Serializable):
         for v in data.get('criminal_records'):
             self.add_criminal_record(v)
 
+        health_data = data.get('health_record', {})
+        self._health_record = HealthRecord(
+            health_conditions=health_data.get('health_conditions', 'Default Condition'),
+            last_checkup_date=health_data.get('last_checkup_date', datetime.now())
+        )
+
         Prisoner.add_item(self)
+
+    @property
+    def health_record(self):
+        return self._health_record
+
+
+    @classmethod
+    def delete_item(cls, item_id: int = None, item: T = None) -> None:
+        items = cls._get_items()
+        if item_id is not None:
+            target_item = next((p for p in items if cls.item_id(p) == item_id), None)
+            if target_item:
+                if hasattr(target_item, 'health_record') and target_item.health_record:
+                    HealthRecord.delete_item(item=target_item.health_record)
+                items.remove(target_item)
+                print(f'Deleted: Item {item_id}')
+        elif item is not None:
+            if hasattr(item, 'health_record') and item.health_record:
+                HealthRecord.delete_item(item=item.health_record)
+            items.remove(item)
+            print(f'Deleted: Item {cls.item_id(item)}')
 
     @classmethod
     def _get_items(cls) -> List['Prisoner']:
@@ -154,6 +184,11 @@ class Prisoner(BaseModel, CollectionManager['Prisoner'], Serializable):
         if not isinstance(value, Country):
             raise ValueError('ERROR: you provided not an Country object')
         self._country = value
+
+
+    @property
+    def id(self):
+        return self._id
 
     def __str__(self) -> str:
         return (f"Prisoner(id={self._id}, "
